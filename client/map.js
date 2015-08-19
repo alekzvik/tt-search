@@ -157,7 +157,19 @@
     this.prefs = prefs;
 
     this.search = function(cb) {
-      // TODO: Implement this.
+      jQuery.getJSON('http://0.0.0.0:5000/search', {
+        count: this.prefs.count,
+        radius: this.prefs.radius,
+        lat: this.prefs.position.lat,
+        lng: this.prefs.position.lng,
+        tags: this.prefs.tags
+      })
+        .done(function(data){
+          cb(false, data.products);
+        })
+        .fail(function(data){
+          cb(data);
+        });
     };
   };
 
@@ -248,6 +260,8 @@
     map.on('change:searchpos', function(latlng) {
       searcher.prefs.position = latlng;
     });
+
+    controls.emit('search');
   };
 
 
