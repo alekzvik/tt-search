@@ -55,6 +55,7 @@ def app(request):
     app = create_app({
         'TESTING': True
     })
+    app.before_first_request_funcs = []
 
     # Establish an application context before running the tests.
     ctx = app.app_context()

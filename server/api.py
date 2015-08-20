@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import random
-import string
 import csv
 from collections import namedtuple
 
@@ -9,6 +7,10 @@ from flask.ext.cors import CORS
 
 api = Blueprint('api', __name__)
 CORS(api)
+
+
+products = tuple()
+shops, shops_index = tuple(), {}
 
 
 def data_path(filename):
@@ -30,8 +32,9 @@ def parse_products():
         scheme = reader.next()
         Product = namedtuple('Product', scheme)
         for line in reader:
-            products.append(Product(*line))
-    products = tuple(products)
+            products.append(Product(
+                line[0], line[1], line[2], float(line[3]), int(line[4])))
+    products = tuple(sorted(products, key=lambda p: p.popularity, reverse=True))
     return products
 
 
@@ -43,7 +46,7 @@ def parse_shops():
         scheme = reader.next()
         Shop = namedtuple('Shop', scheme)
         for pos, line in enumerate(reader):
-            shop = Shop(*line)
+            shop = Shop(line[0], line[1], float(line[2]), float(line[3]))
             shops.append(shop)
             shops_index[shop.id] = pos
     shops = tuple(shops)
@@ -62,6 +65,10 @@ def prepare_product(product):
     return prepared
 
 
+def filter_products(count):
+    return map(prepare_product, products)[:count]
+
+
 @api.route('/search', methods=['GET'])
 def search():
     count = request.args.get('count', 10)
@@ -69,5 +76,5 @@ def search():
         count = int(count)
     except ValueError:
         count = 10
-    filtered_products = map(prepare_product, products)
-    return jsonify({'products': filtered_products[:count]})
+    filtered_products = filter_products(count=count)
+    return jsonify({'products': filtered_products})
