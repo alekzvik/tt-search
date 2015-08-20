@@ -5,7 +5,11 @@ from mock import Mock, patch
 
 from server.api import (
     parse_products, parse_shops, parse_csv_files, parse_tags,
-    filter_products, distance)
+    filter_products, distance, validate_search_args)
+
+
+Shop = namedtuple('shop', ['id', 'lat', 'lng'])
+Product = namedtuple('product', ['shop_id'])
 
 
 class TestSearchView(object):
@@ -27,16 +31,52 @@ class TestProductsFiltering:
         assert len(filtered) == 35
 
     def test_distance(self, app):
-        Shop = namedtuple('shop', ['id', 'lat', 'lng'])
-        Product = namedtuple('product', ['shop_id'])
-        app.shops = [Shop(i, lat=i, lng=10) for i in range(20)]
-        app.products = [Product(i) for i in range(20)]
+        app.shops = [Shop(id=i, lat=i, lng=10) for i in range(20)]
+        app.products = [Product(shop_id=i) for i in range(20)]
         filtered = filter_products(lat=10, lng=10, radius=1000)
         assert len(filtered) == 1
         assert filtered[0].shop_id == 10
 
     def test_tags(self, app):
-        pass
+        app.shops = [Shop(id=i, lat=i, lng=10) for i in range(20)]
+        app.products = [Product(shop_id=i) for i in range(20)]
+        app.tags = {
+            'test': [1, 2]
+        }
+        filtered = filter_products(tags=[], count=10)
+        assert len(filtered) == 10
+        filtered = filter_products(tags=['test'], count=10)
+        assert len(filtered) == 2
+        assert app.products[1] in filtered
+        assert app.products[2] in filtered
+
+
+class TestValidation:
+    def test_count_validation(self):
+        assert validate_search_args({'count': 35}) == {'count': 35}
+        assert validate_search_args({'count': 'asdf'}) == {}
+        assert validate_search_args({'count': None}) == {}
+
+    def test_lat_validation(self):
+        assert validate_search_args({'lat': 35.123}) == {'lat': 35.123}
+        assert validate_search_args({'lat': 'asdf'}) == {}
+        assert validate_search_args({'lat': None}) == {}
+
+    def test_lng_validation(self):
+        assert validate_search_args({'lng': 35.123}) == {'lng': 35.123}
+        assert validate_search_args({'lng': 'asdf'}) == {}
+        assert validate_search_args({'lng': None}) == {}
+
+    def test_radius_validation(self):
+        assert validate_search_args({'radius': 35}) == {'radius': 35}
+        assert validate_search_args({'radius': 'asdf'}) == {}
+        assert validate_search_args({'radius': None}) == {}
+
+    def test_tags_validation(self):
+        assert validate_search_args({'tags': 'a, b'}) == {'tags': ['a', 'b']}
+        assert validate_search_args({'tags': 'a,b'}) == {'tags': ['a', 'b']}
+        assert validate_search_args({'tags': 'ab'}) == {'tags': ['ab']}
+        assert validate_search_args({'tags': None}) == {}
 
 
 class TestCSVParsing:

@@ -162,7 +162,7 @@
         radius: this.prefs.radius,
         lat: this.prefs.position.lat,
         lng: this.prefs.position.lng,
-        tags: this.prefs.tags
+        tags: this.prefs.tags.toString()
       })
         .done(function(data){
           cb(false, data.products);

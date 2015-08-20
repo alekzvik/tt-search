@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
 import csv
 import math
 from collections import namedtuple
@@ -27,8 +26,8 @@ def parse_products():
     products = []
     with open(data_path('products.csv')) as csvfile:
         reader = csv.reader(csvfile)
-        scheme = reader.next()
-        Product = namedtuple('Product', scheme)
+        schema = reader.next()
+        Product = namedtuple('Product', schema)
         for line in reader:
             products.append(Product(
                 line[0], line[1], line[2], float(line[3]), int(line[4])))
@@ -41,8 +40,8 @@ def parse_shops():
     shops_index = {}
     with open(data_path('shops.csv')) as csvfile:
         reader = csv.reader(csvfile)
-        scheme = reader.next()
-        Shop = namedtuple('Shop', scheme)
+        schema = reader.next()
+        Shop = namedtuple('Shop', schema)
         for pos, line in enumerate(reader):
             shop = Shop(line[0], line[1], float(line[2]), float(line[3]))
             shops.append(shop)
@@ -101,31 +100,35 @@ def distance(lat1, lng1, lat2, lng2):
     rad_lat1 = math.radians(lat1)
     rad_lat2 = math.radians(lat2)
     sigma = 2 * math.asin(math.sqrt(
-        math.sin((rad_lat2 - rad_lat1) / 2) ** 2 +
-        math.cos(rad_lat1) * math.cos(rad_lat2) * math.sin(d_lng / 2) ** 2))
+        math.sin((rad_lat2 - rad_lat1) / 2.) ** 2 +
+        math.cos(rad_lat1) * math.cos(rad_lat2) * math.sin(d_lng / 2.) ** 2))
     d = R * sigma
     return d
 
 
+def validate_search_args(args):
+    schema = [
+        ('count', int),
+        ('lat', float),
+        ('lng', float),
+        ('radius', int),
+    ]
+    result = {}
+    for field, desired_type in schema:
+        try:
+            result[field] = desired_type(args.get(field))
+        except Exception:
+            pass
+    tags = args.get('tags', None)
+    if tags:
+        result['tags'] = map(lambda tag: tag.strip(), tags.split(','))
+    return result
+
+
 @api.route('/search', methods=['GET'])
 def search():
-    count = request.args.get('count', 10)
-    lat = request.args.get('lat')
-    lng = request.args.get('lng')
-    radius = request.args.get('radius')
-    try:
-        lat = float(lat)
-        lng = float(lng)
-        radius = int(radius)
-    except Exception:
-        lat, lng, radius = None, None, None
-    try:
-        count = int(count)
-    except ValueError:
-        count = 10
-    filtered_products = filter_products(
-        lat=lat, lng=lng, radius=radius,
-        count=count)
+    params = validate_search_args(request.args)
+    filtered_products = filter_products(**params)
     return jsonify({
         'products': map(prepare_product, filtered_products)
     })
