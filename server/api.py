@@ -17,8 +17,13 @@ def data_path(filename):
 
 
 @api.before_app_first_request
+def parse_csv_files():
+    global products, shops, shops_index
+    products = parse_products()
+    shops, shops_index = parse_shops()
+
+
 def parse_products():
-    global products
     products = []
     with open(data_path('products.csv')) as csvfile:
         reader = csv.reader(csvfile)
@@ -30,9 +35,7 @@ def parse_products():
     return products
 
 
-@api.before_app_first_request
 def parse_shops():
-    global shops, shops_index
     shops = []
     shops_index = {}
     with open(data_path('shops.csv')) as csvfile:

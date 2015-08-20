@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from server.api import parse_products, parse_shops
+from mock import Mock
+
+from server.api import parse_products, parse_shops, parse_csv_files
 
 
 class TestSearchAPI(object):
@@ -29,5 +31,12 @@ class TestSearchAPI(object):
         assert isinstance(shops[0], tuple)
 
     def test_csv_parsing_is_done_before_first_request(self, app):
-        assert parse_products in app.before_first_request_funcs
-        assert parse_shops in app.before_first_request_funcs
+        assert parse_csv_files in app.before_first_request_funcs
+
+    def test_parse_csv_data(self, monkeypatch):
+        products_mock = Mock()
+        shops_mock = Mock(return_value=(None, None))
+        monkeypatch.setattr('server.api.parse_products', products_mock)
+        monkeypatch.setattr('server.api.parse_shops', shops_mock)
+        parse_csv_files()
+        assert shops_mock.call_count == products_mock.call_count == 1
