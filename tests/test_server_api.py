@@ -22,3 +22,6 @@ class TestSearchAPI(object):
         products = parse_products()
         assert len(products) == 75523
         assert isinstance(products[0], tuple)
+
+    def test_csv_parsing_is_done_before_first_request(self, app):
+        assert parse_products in app.before_first_request_funcs

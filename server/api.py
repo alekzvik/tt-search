@@ -16,18 +16,9 @@ def data_path(filename):
     return u"%s/%s" % (data_path, filename)
 
 
-def generate_dummy_product_data():
-    return {
-        'shop': {
-            'lat': 59 + random.uniform(0, 0.5),
-            'lng': 17.5 + random.random(),
-            'name': ''.join(random.sample(string.ascii_letters, 7))},
-        'popularity': random.random(),
-        'name': ''.join(random.sample(string.ascii_letters, 8)),
-    }
-
-
+@api.before_app_first_request
 def parse_products():
+    global products
     products = []
     with open(data_path('products.csv')) as csvfile:
         reader = csv.reader(csvfile)
@@ -35,10 +26,10 @@ def parse_products():
         Product = namedtuple('Products', scheme)
         for line in reader:
             products.append(Product(*line))
+    products = tuple(products)
     return products
 
 
 @api.route('/search', methods=['GET'])
 def search():
-    products = [generate_dummy_product_data() for _ in range(25)]
     return jsonify({'products': products[:20]})
