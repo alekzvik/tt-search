@@ -30,6 +30,17 @@ def parse_products():
     return products
 
 
+def get_shop_by_id(shop_id):
+    return {'lat': None, 'lng': None}
+
+
+def prepare_product(product):
+    prepared = product._asdict()
+    prepared['shop'] = get_shop_by_id(prepared.pop('shop_id'))
+    return prepared
+
+
 @api.route('/search', methods=['GET'])
 def search():
-    return jsonify({'products': products[:20]})
+    filtered_products = map(prepare_product, products)
+    return jsonify({'products': filtered_products[:20]})
