@@ -77,16 +77,23 @@ def prepare_product(product):
     return prepared
 
 
-def filter_products(lat=None, lng=None, radius=None, count=10):
+def filter_products(
+        lat=None, lng=None, radius=None, tags=[], count=10, **kwargs):
     filtered_products = current_app.products
-    filtered_shops = None
+    shop_ids = set()
+    for tag in tags:
+        shop_ids = shop_ids.union(current_app.tags.get(tag, set()))
     if lat and lng and radius:
         def distance_checker(shop):
             return distance(shop.lat, shop.lng, lat, lng) < radius
         filtered_shops = filter(distance_checker, current_app.shops)
+        distance_shop_ids = map(lambda shop: shop.id, filtered_shops)
+        if shop_ids:
+            shop_ids = shop_ids.intersection(distance_shop_ids)
+        else:
+            shop_ids = distance_shop_ids
 
-    if filtered_shops:
-        shop_ids = map(lambda shop: shop.id, filtered_shops)
+    if shop_ids:
         filtered_products = filter(
             lambda product: product.shop_id in shop_ids, filtered_products)
     return filtered_products[:count]
