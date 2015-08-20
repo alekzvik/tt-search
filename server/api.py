@@ -4,7 +4,7 @@ import string
 import csv
 from collections import namedtuple
 
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, current_app, jsonify, request
 from flask.ext.cors import CORS
 
 api = Blueprint('api', __name__)
@@ -64,5 +64,10 @@ def prepare_product(product):
 
 @api.route('/search', methods=['GET'])
 def search():
+    count = request.args.get('count', 10)
+    try:
+        count = int(count)
+    except ValueError:
+        count = 10
     filtered_products = map(prepare_product, products)
-    return jsonify({'products': filtered_products[:20]})
+    return jsonify({'products': filtered_products[:count]})

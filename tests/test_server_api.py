@@ -5,11 +5,11 @@ from server.api import parse_products, parse_shops, parse_csv_files
 
 
 class TestSearchAPI(object):
-    def test_returns_20_products(self, get):
+    def test_returns_10_products(self, get):
         response = get('/search')
         assert response.status_code == 200
         assert 'products' in response.json
-        assert len(response.json['products']) == 20
+        assert len(response.json['products']) == 10
 
     def test_product_signature(self, get):
         response = get('/search')
