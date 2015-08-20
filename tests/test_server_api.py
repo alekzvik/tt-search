@@ -30,3 +30,4 @@ class TestSearchAPI(object):
 
     def test_csv_parsing_is_done_before_first_request(self, app):
         assert parse_products in app.before_first_request_funcs
+        assert parse_shops in app.before_first_request_funcs

@@ -23,20 +23,39 @@ def parse_products():
     with open(data_path('products.csv')) as csvfile:
         reader = csv.reader(csvfile)
         scheme = reader.next()
-        Product = namedtuple('Products', scheme)
+        Product = namedtuple('Product', scheme)
         for line in reader:
             products.append(Product(*line))
     products = tuple(products)
     return products
 
 
-def get_shop_by_id(shop_id):
-    return {'lat': None, 'lng': None}
+@api.before_app_first_request
+def parse_shops():
+    global shops, shops_index
+    shops = []
+    shops_index = {}
+    with open(data_path('shops.csv')) as csvfile:
+        reader = csv.reader(csvfile)
+        scheme = reader.next()
+        Shop = namedtuple('Shop', scheme)
+        for pos, line in enumerate(reader):
+            shop = Shop(*line)
+            shops.append(shop)
+            shops_index[shop.id] = pos
+    shops = tuple(shops)
+    return shops, shops_index
+
+
+def get_and_prepare_shop(shop_id):
+    pos = shops_index[shop_id]
+    shop = shops[pos]
+    return shop._asdict()
 
 
 def prepare_product(product):
     prepared = product._asdict()
-    prepared['shop'] = get_shop_by_id(prepared.pop('shop_id'))
+    prepared['shop'] = get_and_prepare_shop(prepared.pop('shop_id'))
     return prepared
 
 
