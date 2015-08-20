@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from server.api import parse_products
 
 
 class TestSearchAPI(object):
@@ -16,3 +17,8 @@ class TestSearchAPI(object):
         shop = product['shop']
         assert 'lat' in shop
         assert 'lng' in shop
+
+    def test_products_csv_parsing(self):
+        products = parse_products()
+        assert len(products) == 75523
+        assert isinstance(products[0], tuple)
