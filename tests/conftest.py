@@ -56,6 +56,7 @@ def app(request):
         'TESTING': True
     })
     app.before_first_request_funcs = []
+    app.products = ()
 
     # Establish an application context before running the tests.
     ctx = app.app_context()

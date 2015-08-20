@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 import csv
+import math
 from collections import namedtuple
 
 from flask import Blueprint, current_app, jsonify, request
@@ -9,10 +11,6 @@ api = Blueprint('api', __name__)
 CORS(api)
 
 
-products = tuple()
-shops, shops_index = tuple(), {}
-
-
 def data_path(filename):
     data_path = current_app.config['DATA_PATH']
     return u"%s/%s" % (data_path, filename)
@@ -20,9 +18,8 @@ def data_path(filename):
 
 @api.before_app_first_request
 def parse_csv_files():
-    global products, shops, shops_index
-    products = parse_products()
-    shops, shops_index = parse_shops()
+    current_app.products = parse_products()
+    current_app.shops, current_app.shops_index = parse_shops()
 
 
 def parse_products():
@@ -54,8 +51,8 @@ def parse_shops():
 
 
 def get_and_prepare_shop(shop_id):
-    pos = shops_index[shop_id]
-    shop = shops[pos]
+    pos = current_app.shops_index[shop_id]
+    shop = current_app.shops[pos]
     return shop._asdict()
 
 
@@ -65,16 +62,54 @@ def prepare_product(product):
     return prepared
 
 
-def filter_products(count):
-    return map(prepare_product, products)[:count]
+def filter_products(lat=None, lng=None, radius=None, count=10):
+    filtered_products = current_app.products
+    filtered_shops = None
+    if lat and lng and radius:
+        def distance_checker(shop):
+            return distance(shop.lat, shop.lng, lat, lng) < radius
+        filtered_shops = filter(distance_checker, current_app.shops)
+
+    if filtered_shops:
+        shop_ids = map(lambda shop: shop.id, filtered_shops)
+        filtered_products = filter(
+            lambda product: product.shop_id in shop_ids, filtered_products)
+    return filtered_products[:count]
+
+
+def distance(lat1, lng1, lat2, lng2):
+    """Haversine formula for computing distance between two points in meters.
+    """
+    R = 6372795
+    d_lng = math.radians(lng2 - lng1)
+    rad_lat1 = math.radians(lat1)
+    rad_lat2 = math.radians(lat2)
+    sigma = 2 * math.asin(math.sqrt(
+        math.sin((rad_lat2 - rad_lat1) / 2) ** 2 +
+        math.cos(rad_lat1) * math.cos(rad_lat2) * math.sin(d_lng / 2) ** 2))
+    d = R * sigma
+    return d
 
 
 @api.route('/search', methods=['GET'])
 def search():
     count = request.args.get('count', 10)
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    radius = request.args.get('radius')
+    try:
+        lat = float(lat)
+        lng = float(lng)
+        radius = int(radius)
+    except Exception:
+        lat, lng, radius = None, None, None
     try:
         count = int(count)
     except ValueError:
         count = 10
-    filtered_products = filter_products(count=count)
-    return jsonify({'products': filtered_products})
+    filtered_products = filter_products(
+        lat=lat, lng=lng, radius=radius,
+        count=count)
+    return jsonify({
+        'products': map(prepare_product, filtered_products)
+    })

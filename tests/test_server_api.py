@@ -1,20 +1,38 @@
 # -*- coding: utf-8 -*-
 import os
-from mock import Mock, patch, mock_open
+from collections import namedtuple
+from mock import Mock, patch
 
-from server.api import parse_products, parse_shops, parse_csv_files
+from server.api import (
+    parse_products, parse_shops, parse_csv_files, filter_products, distance)
 
 
 class TestSearchView(object):
-    def test_returns_products(self, get):
+    def test_search_returns_products(self, get):
         response = get('/search')
         assert response.status_code == 200
         assert 'products' in response.json
 
     @patch('server.api.filter_products', return_value=[])
-    def test_search_products_count(self, fp_mock, get):
+    def test_search_products_count(self, fp_mock, app, get):
         response = get('/search?count=35')
-        fp_mock.assert_called_once_with(count=35)
+        assert fp_mock.call_count == 1
+
+
+class TestProductsFiltering:
+    def test_count(self, app):
+        app.products = [i for i in range(50)]
+        filtered = filter_products(count=35)
+        assert len(filtered) == 35
+
+    def test_distance(self, app):
+        Shop = namedtuple('shop', ['id', 'lat', 'lng'])
+        Product = namedtuple('product', ['shop_id'])
+        app.shops = [Shop(i, lat=i, lng=10) for i in range(20)]
+        app.products = [Product(i) for i in range(20)]
+        filtered = filter_products(lat=10, lng=10, radius=1000)
+        assert len(filtered) == 1
+        assert filtered[0].shop_id == 10
 
 
 class TestCSVParsing:
@@ -48,3 +66,8 @@ class TestCSVParsing:
         monkeypatch.setattr('server.api.parse_shops', shops_mock)
         parse_csv_files()
         assert shops_mock.call_count == products_mock.call_count == 1
+
+
+class TestUtils:
+    def test_distance(self):
+        assert int(distance(77.1539, 120.398, 77.1804, 129.55)) == 225883
