@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import random
 import string
+import csv
+from collections import namedtuple
 
 from flask import Blueprint, current_app, jsonify
 from flask.ext.cors import CORS
@@ -23,6 +25,17 @@ def generate_dummy_product_data():
         'popularity': random.random(),
         'name': ''.join(random.sample(string.ascii_letters, 8)),
     }
+
+
+def parse_products():
+    products = []
+    with open(data_path('products.csv')) as csvfile:
+        reader = csv.reader(csvfile)
+        scheme = reader.next()
+        Product = namedtuple('Products', scheme)
+        for line in reader:
+            products.append(Product(*line))
+    return products
 
 
 @api.route('/search', methods=['GET'])
