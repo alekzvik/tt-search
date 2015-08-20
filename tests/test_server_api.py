@@ -18,11 +18,6 @@ class TestSearchView(object):
         assert response.status_code == 200
         assert 'products' in response.json
 
-    @patch('server.api.filter_products', return_value=[])
-    def test_search_products_count(self, fp_mock, app, get):
-        response = get('/search?count=35')
-        assert fp_mock.call_count == 1
-
 
 class TestProductsFiltering:
     def test_count(self, app):
@@ -35,7 +30,7 @@ class TestProductsFiltering:
         app.products = [Product(shop_id=i) for i in range(20)]
         filtered = filter_products(lat=10, lng=10, radius=1000)
         assert len(filtered) == 1
-        assert filtered[0].shop_id == 10
+        assert app.products[10] in filtered
 
     def test_tags(self, app):
         app.shops = [Shop(id=i, lat=i, lng=10) for i in range(20)]
@@ -49,6 +44,14 @@ class TestProductsFiltering:
         assert len(filtered) == 2
         assert app.products[1] in filtered
         assert app.products[2] in filtered
+
+    def test_tags_and_distance_intersection(self, app):
+        app.shops = [Shop(id=i, lat=i, lng=10) for i in range(20)]
+        app.products = [Product(shop_id=i) for i in range(20)]
+        app.tags = {'test': [10, 1, 20]}
+        filtered = filter_products(lat=10, lng=10, radius=1e+6, tags=['test'])
+        assert len(filtered) == 1
+        assert app.products[10] in filtered
 
 
 class TestValidation:

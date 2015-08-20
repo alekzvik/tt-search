@@ -36,6 +36,8 @@ def parse_products():
 
 
 def parse_shops():
+    """Returns sorted tuple of products read form csv file.
+    """
     shops = []
     shops_index = {}
     with open(data_path('shops.csv')) as csvfile:
@@ -80,20 +82,23 @@ def prepare_product(product):
 def filter_products(
         lat=None, lng=None, radius=None, tags=[], count=10, **kwargs):
     filtered_products = current_app.products
+    check_distance = lat and lng and radius
+
     shop_ids = set()
     for tag in tags:
         shop_ids = shop_ids.union(current_app.tags.get(tag, set()))
-    if lat and lng and radius:
+
+    if check_distance:
         def distance_checker(shop):
             return distance(shop.lat, shop.lng, lat, lng) < radius
         filtered_shops = filter(distance_checker, current_app.shops)
         distance_shop_ids = map(lambda shop: shop.id, filtered_shops)
-        if shop_ids:
+        if tags:
             shop_ids = shop_ids.intersection(distance_shop_ids)
         else:
             shop_ids = distance_shop_ids
 
-    if shop_ids:
+    if check_distance or tags:
         filtered_products = filter(
             lambda product: product.shop_id in shop_ids, filtered_products)
     return filtered_products[:count]
