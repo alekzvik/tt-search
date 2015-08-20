@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from server.api import parse_products
+from server.api import parse_products, parse_shops
 
 
 class TestSearchAPI(object):
@@ -22,6 +22,11 @@ class TestSearchAPI(object):
         products = parse_products()
         assert len(products) == 75523
         assert isinstance(products[0], tuple)
+
+    def test_shops_csv_parsing(self):
+        shops, shops_index = parse_shops()
+        assert len(shops) == len(shops_index) == 10000
+        assert isinstance(shops[0], tuple)
 
     def test_csv_parsing_is_done_before_first_request(self, app):
         assert parse_products in app.before_first_request_funcs
