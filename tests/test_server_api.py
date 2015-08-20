@@ -4,7 +4,8 @@ from collections import namedtuple
 from mock import Mock, patch
 
 from server.api import (
-    parse_products, parse_shops, parse_csv_files, filter_products, distance)
+    parse_products, parse_shops, parse_csv_files, parse_tags,
+    filter_products, distance)
 
 
 class TestSearchView(object):
@@ -34,6 +35,9 @@ class TestProductsFiltering:
         assert len(filtered) == 1
         assert filtered[0].shop_id == 10
 
+    def test_tags(self, app):
+        pass
+
 
 class TestCSVParsing:
     def test_products_csv_parsing(self):
@@ -59,13 +63,26 @@ class TestCSVParsing:
         assert shop.lat == 59.33265972650577
         assert shop.lng == 18.06061237898499
 
+    def test_tags_csv_parsing(self):
+        tags_path = [
+            os.path.join(os.path.dirname(__file__), 'taggings_sample.csv'),
+            os.path.join(os.path.dirname(__file__), 'tags_sample.csv'),
+        ]
+        with patch('server.api.data_path', side_effect=tags_path):
+            tags = parse_tags()
+        assert len(tags) == 2
+        assert len(tags['trousers']) == 2
+
     def test_parse_csv_data(self, monkeypatch):
-        products_mock = Mock()
+        products_mock, tags_mock = Mock(), Mock()
         shops_mock = Mock(return_value=(None, None))
         monkeypatch.setattr('server.api.parse_products', products_mock)
         monkeypatch.setattr('server.api.parse_shops', shops_mock)
+        monkeypatch.setattr('server.api.parse_tags', tags_mock)
         parse_csv_files()
-        assert shops_mock.call_count == products_mock.call_count == 1
+        assert shops_mock.call_count == 1
+        assert products_mock.call_count == 1
+        assert tags_mock.call_count == 1
 
 
 class TestUtils:

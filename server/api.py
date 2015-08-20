@@ -20,6 +20,7 @@ def data_path(filename):
 def parse_csv_files():
     current_app.products = parse_products()
     current_app.shops, current_app.shops_index = parse_shops()
+    current_app.tags = parse_tags()
 
 
 def parse_products():
@@ -48,6 +49,21 @@ def parse_shops():
             shops_index[shop.id] = pos
     shops = tuple(shops)
     return shops, shops_index
+
+
+def parse_tags():
+    temp, tags = {}, {}
+    with open(data_path('taggings.csv')) as csvfile:
+        reader = csv.reader(csvfile)
+        reader.next()
+        for id, shop_id, tag_id in reader:
+            temp[tag_id] = temp.get(tag_id, []) + [shop_id]
+    with open(data_path('tags.csv')) as csvfile:
+        reader = csv.reader(csvfile)
+        reader.next()
+        for id, tag in reader:
+            tags[tag] = temp[id]
+    return tags
 
 
 def get_and_prepare_shop(shop_id):
