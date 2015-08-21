@@ -5,7 +5,7 @@ from mock import Mock, patch
 
 from server.api import (
     parse_products, parse_shops, parse_csv_files, parse_tags,
-    filter_products, distance, validate_search_args)
+    filter_products, distance, validate_search_args, filter_and_slice_products)
 
 
 Shop = namedtuple('shop', ['id', 'lat', 'lng'])
@@ -52,6 +52,16 @@ class TestProductsFiltering:
         filtered = filter_products(lat=10, lng=10, radius=1e+6, tags=['test'])
         assert len(filtered) == 1
         assert app.products[10] in filtered
+
+    def test_filter_and_slice_products(self, app):
+        app.shops = [Shop(id=i, lat=i, lng=10) for i in range(2)]
+        app.products = [Product(shop_id=i) for i in range(7)]
+        products = filter_and_slice_products(shop_ids=[0, 1], count=5)
+        assert len(products) == 2
+        products = filter_and_slice_products(shop_ids=[1, 2], count=1)
+        assert len(products) == 1
+        products = filter_and_slice_products(shop_ids=[], count=5)
+        assert len(products) == 0
 
 
 class TestValidation:

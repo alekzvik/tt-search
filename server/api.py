@@ -23,6 +23,8 @@ def parse_csv_files():
 
 
 def parse_products():
+    """Returns sorted tuple of products read form csv file.
+    """
     products = []
     with open(data_path('products.csv')) as csvfile:
         reader = csv.reader(csvfile)
@@ -36,7 +38,7 @@ def parse_products():
 
 
 def parse_shops():
-    """Returns sorted tuple of products read form csv file.
+    """Generates shops tuple and mapping from shop_id to index in that tuple.
     """
     shops = []
     shops_index = {}
@@ -53,6 +55,9 @@ def parse_shops():
 
 
 def parse_tags():
+    """Makes mapping from tag_name to shop_ids by parsing tag-related
+    .csv files.
+    """
     temp, tags = {}, {}
     with open(data_path('taggings.csv')) as csvfile:
         reader = csv.reader(csvfile)
@@ -81,7 +86,10 @@ def prepare_product(product):
 
 def filter_products(
         lat=None, lng=None, radius=None, tags=[], count=10, **kwargs):
-    filtered_products = current_app.products
+    """Filters shops by distance and tags and then chooses most
+    popular products from taht shops.
+    """
+    filtered_products = current_app.products[:count]
     check_distance = lat and lng and radius
 
     shop_ids = set()
@@ -99,9 +107,25 @@ def filter_products(
             shop_ids = distance_shop_ids
 
     if check_distance or tags:
-        filtered_products = filter(
-            lambda product: product.shop_id in shop_ids, filtered_products)
-    return filtered_products[:count]
+        filtered_products = filter_and_slice_products(shop_ids, count)
+    return filtered_products
+
+
+def filter_and_slice_products(shop_ids, count):
+    """Filters only first :count: of products that are sold in shops
+    from :shop_ids: list.
+    """
+    if not shop_ids:
+        return []
+    current = 0
+    result = []
+    for product in current_app.products:
+        if current >= count:
+            break
+        if product.shop_id in shop_ids:
+            result.append(product)
+            current += 1
+    return result
 
 
 def distance(lat1, lng1, lat2, lng2):
@@ -119,6 +143,8 @@ def distance(lat1, lng1, lat2, lng2):
 
 
 def validate_search_args(args):
+    """Converts args to desired types if possible.
+    """
     schema = [
         ('count', int),
         ('lat', float),
