@@ -85,7 +85,7 @@ def prepare_product(product):
 
 
 def filter_products(
-        lat=None, lng=None, radius=None, tags=[], count=10, **kwargs):
+        lat=None, lng=None, radius=None, tags=tuple(), count=10, **kwargs):
     """Filters shops by distance and tags and then chooses most
     popular products from taht shops.
     """
